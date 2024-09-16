@@ -1,0 +1,282 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Netflix Clone</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #141414;
+            color: #fff;
+        }
+
+        header {
+            background-color: rgba(0, 0, 0, 0.7);
+            padding: 20px;
+            position: fixed;
+            width: 100%;
+            z-index: 1000;
+        }
+
+        nav {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .logo {
+            color: #e50914;
+            font-size: 2rem;
+            font-weight: bold;
+        }
+
+        .nav-links {
+            display: flex;
+            gap: 20px;
+        }
+
+        .nav-links a {
+            color: #fff;
+            text-decoration: none;
+        }
+
+        .hero {
+            height: 80vh;
+            background-image: url('https://springboard-cdn.appadvice.com/wp-content/appadvice-v2-media/2016/11/Netflix-background_860c8ece6b34fb4f43af02255ca8f225.jpg');
+            background-size: cover;
+            background-position: center;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            text-align: center;
+        }
+
+        .hero-content {
+            max-width: 800px;
+            padding: 20px;
+        }
+
+        h1 {
+            font-size: 3rem;
+            margin-bottom: 20px;
+        }
+
+        .cta-button {
+            background-color: #e50914;
+            color: #fff;
+            padding: 10px 20px;
+            border: none;
+            border-radius: 5px;
+            font-size: 1.2rem;
+            cursor: pointer;
+            transition: background-color 0.3s;
+        }
+
+        .cta-button:hover {
+            background-color: #f40612;
+        }
+
+        .movie-row {
+            padding: 20px;
+            overflow-x: auto;
+            white-space: nowrap;
+        }
+
+        .movie-card {
+            display: inline-block;
+            width: 200px;
+            margin-right: 10px;
+            transition: transform 0.3s;
+            cursor: pointer;
+        }
+
+        .movie-card:hover {
+            transform: scale(1.05);
+        }
+
+        .movie-card img {
+            width: 100%;
+            height: auto;
+        }
+
+        .modal {
+            display: none;
+            position: fixed;
+            z-index: 2000;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.8);
+        }
+
+        .modal-content {
+            background-color: #141414;
+            margin: 10% auto;
+            padding: 20px;
+            width: 80%;
+            max-width: 600px;
+        }
+
+        .close {
+            color: #aaa;
+            float: right;
+            font-size: 28px;
+            font-weight: bold;
+            cursor: pointer;
+        }
+
+        .close:hover {
+            color: #fff;
+        }
+
+        @media (max-width: 768px) {
+            .hero {
+                height: 60vh;
+            }
+
+            h1 {
+                font-size: 2rem;
+            }
+
+            .movie-card {
+                width: 150px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <header>
+        <nav>
+            <div class="logo">NETFLIX</div>
+            <div class="nav-links">
+                <a href="#home">Home</a>
+                <a href="#tv-shows">TV Shows</a>
+                <a href="#movies">Movies</a>
+                <a href="#my-list">My List</a>
+            </div>
+        </nav>
+    </header>
+
+    <main>
+        <section class="hero">
+            <div class="hero-content">
+                <h1>Unlimited movies, TV shows, and more.</h1>
+                <button class="cta-button">Watch Now</button>
+            </div>
+        </section>
+
+        <section class="movie-row" id="trending">
+            <h2>Trending Now</h2>
+            <!-- Movie cards will be dynamically added here -->
+        </section>
+
+        <section class="movie-row" id="top-rated">
+            <h2>Top Rated</h2>
+            <!-- Movie cards will be dynamically added here -->
+        </section>
+    </main>
+
+    <div id="movieModal" class="modal">
+        <div class="modal-content">
+            <span class="close">&times;</span>
+            <div id="movieDetails"></div>
+        </div>
+    </div>
+
+    <script>
+        const apiKey = '7d391528';
+        const baseUrl = 'http://www.omdbapi.com/';
+
+        async function fetchMovies(searchTerm) {
+            const response = await fetch(`${baseUrl}?s=${searchTerm}&apikey=${apiKey}`);
+            const data = await response.json();
+            return data.Search || [];
+        }
+
+        async function fetchMovieDetails(imdbID) {
+            const response = await fetch(`${baseUrl}?i=${imdbID}&apikey=${apiKey}`);
+            return await response.json();
+        }
+
+        function createMovieCard(movie) {
+            const movieCard = document.createElement('div');
+            movieCard.classList.add('movie-card');
+            movieCard.innerHTML = `
+                <img src="${movie.Poster}" alt="${movie.Title}">
+            `;
+            movieCard.addEventListener('click', () => showMovieDetails(movie.imdbID));
+            return movieCard;
+        }
+
+        async function populateMovieRow(sectionId, searchTerm) {
+            const movieRow = document.getElementById(sectionId);
+            const movies = await fetchMovies(searchTerm);
+            movies.forEach(movie => {
+                movieRow.appendChild(createMovieCard(movie));
+            });
+        }
+
+        async function showMovieDetails(imdbID) {
+            const modal = document.getElementById('movieModal');
+            const movieDetails = document.getElementById('movieDetails');
+            const movie = await fetchMovieDetails(imdbID);
+
+            movieDetails.innerHTML = `
+                <h2>${movie.Title}</h2>
+                <p>Year: ${movie.Year}</p>
+                <p>Director: ${movie.Director}</p>
+                <p>Plot: ${movie.Plot}</p>
+                <p>IMDb Rating: ${movie.imdbRating}</p>
+            `;
+
+            modal.style.display = 'block';
+        }
+
+        // Close modal when clicking on the close button or outside the modal
+        window.onclick = function(event) {
+            const modal = document.getElementById('movieModal');
+            if (event.target == modal || event.target.classList.contains('close')) {
+                modal.style.display = 'none';
+            }
+        }
+
+        // Populate movie rows
+        populateMovieRow('trending', 'action');
+        populateMovieRow('top-rated', 'drama');
+
+        // Implement smooth scrolling for navigation links
+        document.querySelectorAll('a[href^="#"]').forEach(anchor => {
+            anchor.addEventListener('click', function (e) {
+                e.preventDefault();
+                document.querySelector(this.getAttribute('href')).scrollIntoView({
+                    behavior: 'smooth'
+                });
+            });
+        });
+
+        // Implement lazy loading for movie posters
+        if ('IntersectionObserver' in window) {
+            const lazyImages = document.querySelectorAll('img');
+            const imageObserver = new IntersectionObserver((entries, observer) => {
+                entries.forEach(entry => {
+                    if (entry.isIntersecting) {
+                        const image = entry.target;
+                        image.src = image.dataset.src;
+                        imageObserver.unobserve(image);
+                    }
+                });
+            });
+
+            lazyImages.forEach(img => imageObserver.observe(img));
+        }
+    </script>
+</body>
+</html>
